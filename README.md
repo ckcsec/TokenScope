@@ -4,7 +4,7 @@
 
 <h1 align="center">TokenScope</h1>
 
-<p align="center">macOS 菜单栏里的本地 AI Agent Token、请求数与 API 等值成本面板。</p>
+<p align="center">macOS 本地的 AI Agent Token、请求数与 API 等值成本面板——启动即开主窗口，关闭后驻留菜单栏。</p>
 
 <p align="center">
   <a href="https://github.com/ckcsec/TokenScope/releases/latest"><img src="https://img.shields.io/github/v/release/ckcsec/TokenScope?display_name=tag" alt="GitHub release"></a>
@@ -21,7 +21,7 @@
 
 当前公开包采用本地签名，尚未经过 Apple 公证。首次启动如被 macOS 拦截，请在 Finder 中右键 TokenScope，选择“打开”，再确认一次。不要从非本仓库的第三方下载站获取安装包。
 
-系统要求：macOS 13 Ventura 或更高版本，支持 Apple Silicon 与 Intel Mac。
+系统要求：macOS 13 Ventura 或更高版本，支持 Apple Silicon 与 Intel Mac。版本变更见 [更新日志](RELEASE_NOTES.md)。
 
 ## 功能
 
@@ -33,7 +33,7 @@
 - 后台常驻，可由用户主动开启登录时启动
 - 本地缓存与增量扫描，大型历史日志也能快速打开面板
 - 仅展示实际读取到用量的数据源，不用预设列表冒充支持
-- 价格表默认每 24 小时从本仓库自动更新，失败时回退内置公开模型价格（可在设置中关闭）
+- 价格表默认每 24 小时从本仓库自动更新，失败时回退内置公开模型价格（可在设置中关闭），内置表覆盖 GPT-5.6、Claude Opus 5、Gemini、Grok、GLM-5.3、Kimi K3、Qwen、DeepSeek 等主流模型
 
 ## 数据源
 
