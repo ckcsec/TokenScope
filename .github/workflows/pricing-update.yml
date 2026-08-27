@@ -1,0 +1,31 @@
+name: Update pricing from models.dev
+
+on:
+  schedule:
+    # Mondays 02:00 UTC (10:00 Beijing), after the drift check
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate pricing.json from models.dev
+        run: python3 scripts/update_pricing.py
+      - name: Validate catalog against the built-in table
+        run: swift test --filter testPricingJSONMatchesBuiltInTable
+      - name: Commit new models
+        run: |
+          if git diff --quiet -- pricing.json; then
+            echo "pricing.json unchanged, nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pricing.json
+          git commit -m "Update pricing catalog from models.dev"
+          git push

@@ -34,6 +34,7 @@
 - 本地缓存与增量扫描，大型历史日志也能快速打开面板
 - 仅展示实际读取到用量的数据源，不用预设列表冒充支持
 - 价格表默认每 24 小时从本仓库自动更新，失败时回退内置公开模型价格（可在设置中关闭），内置表覆盖 GPT-5.6、Claude Opus 5、Gemini、Grok、GLM-5.3、Kimi K3、Qwen、DeepSeek 等主流模型
+- 价格闭环：仓库内的 `pricing.json` 由每周一次的 [models.dev](https://models.dev) 社区目录自动补齐新模型（[`scripts/update_pricing.py`](scripts/update_pricing.py) + 工作流），已收录的价格绝不覆盖，官方调价需人工更新内置表
 
 ## 数据源
 

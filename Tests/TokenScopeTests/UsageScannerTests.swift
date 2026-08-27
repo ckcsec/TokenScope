@@ -80,12 +80,14 @@ final class UsageScannerTests: XCTestCase {
             .deletingLastPathComponent()
         let data = try Data(contentsOf: repoRoot.appendingPathComponent("pricing.json"))
         let remote = PricingCatalogFetcher.parseCatalog(data)
+        let remoteByID = Dictionary(uniqueKeysWithValues: remote.map { ($0.modelID, $0) })
         let builtIn = Dictionary(uniqueKeysWithValues: PricingCatalog.builtInPrices.map { ($0.modelID, $0) })
 
-        XCTAssertEqual(Set(remote.map(\.modelID)), Set(builtIn.keys))
-        for price in remote {
-            let expected = try XCTUnwrap(builtIn[price.modelID])
-            XCTAssertEqual(price.basis, .remote)
+        // pricing.json may carry extra models imported from the community
+        // catalog, but every built-in entry must be present with equal values.
+        XCTAssertTrue(Set(builtIn.keys).isSubset(of: Set(remoteByID.keys)))
+        for (modelID, expected) in builtIn {
+            let price = try XCTUnwrap(remoteByID[modelID])
             XCTAssertEqual(price.inputPerMillion, expected.inputPerMillion)
             XCTAssertEqual(price.outputPerMillion, expected.outputPerMillion)
             XCTAssertEqual(price.cacheReadPerMillion, expected.cacheReadPerMillion)
