@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @main
@@ -16,14 +17,47 @@ struct TokenScopeApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
-    private let store = UsageStore()
-    private let launchAtLogin = LaunchAtLoginController()
+    private let language: LanguageController
+    private let dataSources: DataSourceAccessManager
+    private let store: UsageStore
+    private let launchAtLogin: LaunchAtLoginController
+    private var languageObserver: AnyCancellable?
+    #if DEBUG
+    private var previewWindow: NSWindow?
+    #endif
+
+    override init() {
+        let language = LanguageController()
+        #if DEBUG
+        if let index = CommandLine.arguments.firstIndex(of: "--preview-language"),
+           CommandLine.arguments.indices.contains(index + 1),
+           let previewLanguage = AppLanguage(rawValue: CommandLine.arguments[index + 1]) {
+            language.current = previewLanguage
+        }
+        #endif
+        let dataSources = DataSourceAccessManager(language: language)
+        self.language = language
+        self.dataSources = dataSources
+        self.store = UsageStore(dataSources: dataSources)
+        self.launchAtLogin = LaunchAtLoginController(language: language)
+        super.init()
+        languageObserver = language.$current.sink { [weak self] _ in
+            self?.updateStatusItemTooltip()
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if CommandLine.arguments.contains("--scan-once") {
             runScanOnce()
             return
         }
+
+        #if DEBUG
+        if CommandLine.arguments.contains("--preview-window") {
+            showPreviewWindow()
+            return
+        }
+        #endif
 
         NSApplication.shared.setActivationPolicy(.accessory)
         configurePopover()
@@ -37,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.image?.isTemplate = true
         item.button?.imagePosition = .imageOnly
         item.button?.title = ""
-        item.button?.toolTip = "TokenScope · 点击查看今日用量"
+        item.button?.toolTip = statusItemTooltip
         item.button?.target = self
         item.button?.action = #selector(togglePopover(_:))
         statusItem = item
@@ -48,8 +82,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         popover.animates = true
         popover.contentSize = NSSize(width: 1040, height: 720)
         popover.contentViewController = NSHostingController(
-            rootView: TokenScopeRootView(store: store, launchAtLogin: launchAtLogin)
+            rootView: TokenScopeRootView(
+                store: store,
+                launchAtLogin: launchAtLogin,
+                dataSources: dataSources
+            )
+            .environmentObject(language)
         )
+    }
+
+    #if DEBUG
+    private func showPreviewWindow() {
+        NSApplication.shared.setActivationPolicy(.regular)
+        let content = TokenScopeRootView(
+            store: store,
+            launchAtLogin: launchAtLogin,
+            dataSources: dataSources
+        )
+        .environmentObject(language)
+        let controller = NSHostingController(rootView: content)
+        let window = NSWindow(contentViewController: controller)
+        window.title = "TokenScope Preview"
+        window.setContentSize(NSSize(width: 1040, height: 720))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        previewWindow = window
+        if CommandLine.arguments.contains("--preview-demo") {
+            store.showDemo()
+        } else {
+            store.refresh(force: true)
+        }
+    }
+    #endif
+
+    private var statusItemTooltip: String {
+        language.text(
+            "TokenScope · 点击查看今日用量",
+            "TokenScope · 點擊查看今天用量",
+            "TokenScope · Click to view today's usage"
+        )
+    }
+
+    private func updateStatusItemTooltip() {
+        statusItem?.button?.toolTip = statusItemTooltip
     }
 
     @objc private func togglePopover(_ sender: AnyObject?) {
@@ -66,7 +142,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     private func runScanOnce() {
         Task.detached(priority: .userInitiated) {
-            let snapshot = UsageScanner().scan()
+            let locations = UsageSourceLocations.automaticDefaults
+            let snapshot = UsageScanner().scan(locations: locations)
             let overview = snapshot.overview(period: .all)
             let summary: [String: Any] = [
                 "generatedAt": ISO8601DateFormatter().string(from: snapshot.generatedAt),

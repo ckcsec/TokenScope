@@ -20,6 +20,7 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
     -output "$UNIVERSAL_BINARY"
 cp "$ROOT_DIR/Resources/Info.plist" "$APP_DIR/Contents/Info.plist"
 cp "$ROOT_DIR/Resources/TokenScope.icns" "$APP_DIR/Contents/Resources/TokenScope.icns"
+cp "$ROOT_DIR/Resources/PrivacyInfo.xcprivacy" "$APP_DIR/Contents/Resources/PrivacyInfo.xcprivacy"
 
 SIGNING_IDENTITY="${CODESIGN_IDENTITY:--}"
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then

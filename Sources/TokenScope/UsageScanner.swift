@@ -1,44 +1,99 @@
 import Foundation
 
-final class UsageScanner {
+final class UsageScanner: @unchecked Sendable {
     private let fileManager = FileManager.default
-    private let homeURL = FileManager.default.homeDirectoryForCurrentUser
 
-    func scan() -> UsageSnapshot {
+    func scan(locations: UsageSourceLocations, previousSnapshot: UsageSnapshot? = nil) -> UsageSnapshot {
+        var activeSecurityScopes: [URL] = []
+        for url in locations.securityScopedRoots where url.startAccessingSecurityScopedResource() {
+            activeSecurityScopes.append(url)
+        }
+        defer {
+            activeSecurityScopes.forEach { $0.stopAccessingSecurityScopedResource() }
+        }
+
         var warnings: [String] = []
         var scannedFiles = 0
         var records: [UsageRecord] = []
-        let pricing = PricingCatalog.load()
+        let pricing = PricingCatalog.load(ccSwitchDatabaseURL: locations.ccSwitchDatabaseURL)
+        let previousRecordsByPath = Dictionary(grouping: previousSnapshot?.records ?? [], by: \.sourcePath)
+        let previousGeneratedAt = previousSnapshot?.generatedAt
 
-        let claude = scanClaudeCode(pricing: pricing)
-        records.append(contentsOf: claude.records)
-        scannedFiles += claude.scannedFiles
-        warnings.append(contentsOf: claude.warnings)
+        if let root = locations.claudeProjectsURL {
+            let claude = scanClaudeCode(
+                at: root,
+                pricing: pricing,
+                previousRecordsByPath: previousRecordsByPath,
+                previousGeneratedAt: previousGeneratedAt
+            )
+            records.append(contentsOf: claude.records)
+            scannedFiles += claude.scannedFiles
+            warnings.append(contentsOf: claude.warnings)
+        }
 
-        let codex = scanCodex(pricing: pricing)
-        records.append(contentsOf: codex.records)
-        scannedFiles += codex.scannedFiles
-        warnings.append(contentsOf: codex.warnings)
+        if let root = locations.codexSessionsURL {
+            let codex = scanCodex(
+                at: root,
+                databaseURL: locations.codexDatabaseURL,
+                pricing: pricing,
+                previousRecordsByPath: previousRecordsByPath,
+                previousGeneratedAt: previousGeneratedAt
+            )
+            records.append(contentsOf: codex.records)
+            scannedFiles += codex.scannedFiles
+            warnings.append(contentsOf: codex.warnings)
+        }
 
-        let agents = discoverAgents(records: records)
+        if let databaseURL = locations.cursorDatabaseURL {
+            let cursor = scanCursor(databaseURL: databaseURL)
+            records.append(contentsOf: cursor.records)
+            scannedFiles += cursor.scannedFiles
+            warnings.append(contentsOf: cursor.warnings)
+        }
+
+        if let root = locations.grokSessionsURL {
+            let grok = scanGrok(at: root, pricing: pricing)
+            records.append(contentsOf: grok.records)
+            scannedFiles += grok.scannedFiles
+            warnings.append(contentsOf: grok.warnings)
+        }
+
+        if let databaseURL = locations.zcodeDatabaseURL {
+            let zcode = scanZCode(databaseURL: databaseURL, pricing: pricing)
+            records.append(contentsOf: zcode.records)
+            scannedFiles += zcode.scannedFiles
+            warnings.append(contentsOf: zcode.warnings)
+        }
 
         return UsageSnapshot(
             generatedAt: Date(),
             records: records.sorted { $0.timestamp > $1.timestamp },
-            agents: agents,
+            agents: discoverAgents(records: records, locations: locations),
             providers: ProviderCatalog.providers,
             scannedFiles: scannedFiles,
             warnings: warnings
         )
     }
 
-    private func scanClaudeCode(pricing: PricingCatalog) -> (records: [UsageRecord], scannedFiles: Int, warnings: [String]) {
-        let root = expandHome("~/.claude/projects")
+    private func scanClaudeCode(
+        at root: URL,
+        pricing: PricingCatalog,
+        previousRecordsByPath: [String: [UsageRecord]],
+        previousGeneratedAt: Date?
+    ) -> (records: [UsageRecord], scannedFiles: Int, warnings: [String]) {
         let files = jsonlFiles(under: root)
         var records: [UsageRecord] = []
         var warnings: [String] = []
 
         for file in files {
+            if let reused = reusableRecords(
+                for: file,
+                previousRecordsByPath: previousRecordsByPath,
+                previousGeneratedAt: previousGeneratedAt
+            ) {
+                records.append(contentsOf: reused)
+                continue
+            }
             var seenMessageIDs = Set<String>()
             readJSONLines(file) { object in
                 guard object.string("type") == "assistant",
@@ -48,10 +103,9 @@ final class UsageScanner {
                 }
 
                 let messageID = message.string("id") ?? object.string("uuid") ?? UUID().uuidString
-                guard !seenMessageIDs.contains(messageID) else { return }
-                seenMessageIDs.insert(messageID)
+                guard seenMessageIDs.insert(messageID).inserted else { return }
 
-                let timestamp = self.parseDate(object.string("timestamp")) ?? self.fileModificationDate(file) ?? Date()
+                let timestamp = self.parseDate(object.string("timestamp")) ?? Date()
                 let model = message.string("model") ?? "Claude Code"
                 let provider = ProviderCatalog.providerName(for: model, fallback: "Anthropic")
 
@@ -93,14 +147,27 @@ final class UsageScanner {
         return (records, files.count, warnings)
     }
 
-    private func scanCodex(pricing: PricingCatalog) -> (records: [UsageRecord], scannedFiles: Int, warnings: [String]) {
-        let root = expandHome("~/.codex/sessions")
+    private func scanCodex(
+        at root: URL,
+        databaseURL: URL?,
+        pricing: PricingCatalog,
+        previousRecordsByPath: [String: [UsageRecord]],
+        previousGeneratedAt: Date?
+    ) -> (records: [UsageRecord], scannedFiles: Int, warnings: [String]) {
         let files = jsonlFiles(under: root)
-        let threadMetadata = loadCodexThreadMetadata()
+        let threadMetadata = loadCodexThreadMetadata(databaseURL: databaseURL)
         var records: [UsageRecord] = []
         var warnings: [String] = []
 
         for file in files {
+            if let reused = reusableRecords(
+                for: file,
+                previousRecordsByPath: previousRecordsByPath,
+                previousGeneratedAt: previousGeneratedAt
+            ) {
+                records.append(contentsOf: reused)
+                continue
+            }
             var sessionID = file.deletingPathExtension().lastPathComponent
             var modelProvider = "openai"
             var model = "Codex"
@@ -145,7 +212,7 @@ final class UsageScanner {
                 previousTotal = total
                 guard delta.total > 0 else { return }
 
-                let timestamp = self.parseDate(object.string("timestamp")) ?? self.fileModificationDate(file) ?? Date()
+                let timestamp = self.parseDate(object.string("timestamp")) ?? Date()
                 let provider = self.normalizeProvider(modelProvider)
                 let quote = pricing.quote(model: model, usage: delta)
 
@@ -170,16 +237,393 @@ final class UsageScanner {
         return (records, files.count, warnings)
     }
 
-    private func discoverAgents(records: [UsageRecord]) -> [AgentToolInfo] {
-        let totalsByTool = Dictionary(grouping: records, by: \.tool).mapValues { rows in
-            rows.reduce(0) { $0 + $1.usage.total }
+    private func reusableRecords(
+        for file: URL,
+        previousRecordsByPath: [String: [UsageRecord]],
+        previousGeneratedAt: Date?
+    ) -> [UsageRecord]? {
+        guard let previousGeneratedAt,
+              let records = previousRecordsByPath[file.path],
+              !records.isEmpty,
+              let values = try? file.resourceValues(forKeys: [.contentModificationDateKey]),
+              let modificationDate = values.contentModificationDate,
+              modificationDate <= previousGeneratedAt else {
+            return nil
+        }
+        return records
+    }
+
+    private func scanCursor(
+        databaseURL: URL
+    ) -> (records: [UsageRecord], scannedFiles: Int, warnings: [String]) {
+        guard fileManager.fileExists(atPath: databaseURL.path) else { return ([], 0, []) }
+
+        // Cursor stores one type=1 bubble for each user-initiated Agent request.
+        let query = """
+        select key,
+               coalesce(json_extract(cast(value as text), '$.createdAt'), ''),
+               coalesce(json_extract(cast(value as text), '$.modelInfo.modelName'), ''),
+               coalesce(json_extract(cast(value as text), '$.contextWindowStatusAtCreation.tokensUsed'), 0)
+        from cursorDiskKV
+        where key like 'bubbleId:%'
+          and json_valid(cast(value as text))
+          and json_extract(cast(value as text), '$.type') = 1;
+        """
+
+        let rows = SQLiteReader.rows(at: databaseURL, query: query, columnCount: 4)
+        let records = rows.compactMap { values -> UsageRecord? in
+            guard values.count == 4, let timestamp = parseDate(values[1]) else { return nil }
+            let rawModel = values[2].trimmingCharacters(in: .whitespacesAndNewlines)
+            let model = rawModel.isEmpty || rawModel == "default" ? "Cursor Auto" : rawModel
+            let contextTokens = max(0, Int(values[3]) ?? 0)
+            let usage = TokenUsage(
+                input: contextTokens,
+                cachedInput: 0,
+                cacheWrite: 0,
+                output: 0,
+                reasoningOutput: 0,
+                total: contextTokens
+            )
+
+            return UsageRecord(
+                id: "cursor:\(values[0])",
+                timestamp: timestamp,
+                tool: "Cursor",
+                provider: ProviderCatalog.providerName(for: model, fallback: "Cursor"),
+                model: model,
+                usage: usage,
+                costUSD: nil,
+                costBasis: nil,
+                sourcePath: databaseURL.path
+            )
         }
 
+        return (records, 1, [])
+    }
+
+    private func scanGrok(
+        at root: URL,
+        pricing: PricingCatalog
+    ) -> (records: [UsageRecord], scannedFiles: Int, warnings: [String]) {
+        guard fileManager.fileExists(atPath: root.path) else { return ([], 0, []) }
+
+        let sessionFiles = namedFiles(
+            ["updates.jsonl", "chat_history.jsonl", "signals.json", "summary.json"],
+            under: root
+        )
+        let sessionDirectories = Set(sessionFiles.map { $0.deletingLastPathComponent() })
+        var records: [UsageRecord] = []
+        var scannedFiles = 0
+        var warnings: [String] = []
+
+        for directory in sessionDirectories.sorted(by: { $0.path < $1.path }) {
+            let sessionID = directory.lastPathComponent
+            let summaryURL = directory.appendingPathComponent("summary.json")
+            let summary = readJSONObject(summaryURL)
+            if summary != nil { scannedFiles += 1 }
+
+            let defaultModel = summary.flatMap {
+                firstString(in: $0, keys: ["model", "model_id", "modelId", "primaryModelId"])
+            } ?? "Grok Build"
+            let fallbackDate = summary.flatMap { firstDate(in: $0) }
+                ?? ((try? directory.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? Date())
+            var sessionRecords: [UsageRecord] = []
+            var seenRecordIDs = Set<String>()
+
+            for fileName in ["updates.jsonl", "chat_history.jsonl"] where sessionRecords.isEmpty {
+                let file = directory.appendingPathComponent(fileName)
+                guard fileManager.fileExists(atPath: file.path) else { continue }
+                scannedFiles += 1
+                var eventIndex = 0
+                readJSONLines(file) { object in
+                    eventIndex += 1
+                    for record in self.grokRecords(
+                        from: object,
+                        sessionID: sessionID,
+                        eventIndex: eventIndex,
+                        defaultModel: defaultModel,
+                        fallbackDate: fallbackDate,
+                        sourcePath: file.path,
+                        pricing: pricing
+                    ) where seenRecordIDs.insert(record.id).inserted {
+                        sessionRecords.append(record)
+                    }
+                } onError: { error in
+                    warnings.append("Grok Build: \(file.lastPathComponent) 读取失败: \(error.localizedDescription)")
+                }
+            }
+
+            if sessionRecords.isEmpty {
+                let signalsURL = directory.appendingPathComponent("signals.json")
+                if let signals = readJSONObject(signalsURL) {
+                    scannedFiles += 1
+                    sessionRecords.append(contentsOf: grokRecords(
+                        from: signals,
+                        sessionID: sessionID,
+                        eventIndex: 0,
+                        defaultModel: defaultModel,
+                        fallbackDate: fallbackDate,
+                        sourcePath: signalsURL.path,
+                        pricing: pricing
+                    ))
+                }
+            }
+
+            records.append(contentsOf: sessionRecords)
+        }
+
+        return (records, scannedFiles, warnings)
+    }
+
+    private func grokRecords(
+        from object: [String: Any],
+        sessionID: String,
+        eventIndex: Int,
+        defaultModel: String,
+        fallbackDate: Date,
+        sourcePath: String,
+        pricing: PricingCatalog
+    ) -> [UsageRecord] {
+        let timestamp = firstDate(in: object) ?? fallbackDate
+        let eventID = firstString(
+            in: object,
+            keys: ["messageId", "message_id", "requestId", "request_id", "eventId", "event_id", "id"]
+        ) ?? "event-\(eventIndex)"
+
+        if let modelUsage = firstDictionary(in: object, keys: ["modelUsage", "model_usage"]) {
+            let parsed = modelUsage.compactMap { model, value -> UsageRecord? in
+                guard let usageObject = value as? [String: Any],
+                      let usage = grokUsage(from: usageObject) else { return nil }
+                let reportedCost = reportedGrokCost(in: usageObject)
+                    ?? (modelUsage.count == 1 ? reportedGrokCost(in: object) : nil)
+                let quote = reportedCost == nil ? pricing.quote(model: model, usage: usage) : nil
+                let calls = usageObject.firstInt(["modelCalls", "model_calls", "requestCount", "request_count", "calls"])
+
+                return UsageRecord(
+                    id: "grok:\(sessionID):\(eventID):\(model)",
+                    timestamp: timestamp,
+                    tool: "Grok Build",
+                    provider: "xAI",
+                    model: model,
+                    usage: usage,
+                    costUSD: reportedCost ?? quote?.amountUSD,
+                    costBasis: reportedCost == nil ? quote?.basis : .reported,
+                    sourcePath: sourcePath,
+                    requestCount: calls.flatMap { $0 > 0 ? $0 : nil }
+                )
+            }
+            if !parsed.isEmpty { return parsed }
+        }
+
+        guard let usageObject = firstUsageDictionary(in: object),
+              let usage = grokUsage(from: usageObject) else { return [] }
+        let model = firstString(in: object, keys: ["model", "model_id", "modelId", "primaryModelId"])
+            ?? defaultModel
+        let reportedCost = reportedGrokCost(in: object) ?? reportedGrokCost(in: usageObject)
+        let quote = reportedCost == nil ? pricing.quote(model: model, usage: usage) : nil
+        let calls = object.firstInt(["num_turns", "numTurns", "turn_count", "turnCount", "successes", "assistantMessageCount"])
+
+        return [UsageRecord(
+            id: "grok:\(sessionID):\(eventID):\(model)",
+            timestamp: timestamp,
+            tool: "Grok Build",
+            provider: "xAI",
+            model: model,
+            usage: usage,
+            costUSD: reportedCost ?? quote?.amountUSD,
+            costBasis: reportedCost == nil ? quote?.basis : .reported,
+            sourcePath: sourcePath,
+            requestCount: calls.flatMap { $0 > 0 ? $0 : nil }
+        )]
+    }
+
+    private func grokUsage(from object: [String: Any]) -> TokenUsage? {
+        let input = object.firstInt(["input_tokens", "inputTokens", "prompt_tokens", "promptTokens"]) ?? 0
+        let cacheRead = object.firstInt([
+            "cache_read_input_tokens", "cacheReadInputTokens", "cache_read_tokens", "cacheReadTokens", "cached_tokens", "cachedTokens"
+        ]) ?? 0
+        let cacheWrite = object.firstInt([
+            "cache_creation_input_tokens", "cacheCreationInputTokens", "cache_write_input_tokens", "cacheWriteInputTokens"
+        ]) ?? 0
+        let output = object.firstInt(["output_tokens", "outputTokens", "completion_tokens", "completionTokens"]) ?? 0
+        let total = object.firstInt(["total_tokens", "totalTokens"])
+            ?? (input + cacheRead + cacheWrite + output)
+        guard total > 0 else { return nil }
+
+        // Grok Build's output_tokens already includes reasoning tokens.
+        return TokenUsage(
+            input: max(0, input),
+            cachedInput: max(0, cacheRead),
+            cacheWrite: max(0, cacheWrite),
+            output: max(0, output),
+            reasoningOutput: 0,
+            total: max(0, total)
+        )
+    }
+
+    private func reportedGrokCost(in object: [String: Any]) -> Double? {
+        for key in ["costUSD", "cost_usd", "totalCostUSD", "total_cost_usd"] {
+            if let value = object.double(key), value >= 0 { return value }
+        }
+        for key in ["cost_in_usd_ticks", "total_cost_usd_ticks", "costInUSDTicks", "totalCostUSDTicks"] {
+            if let ticks = object.double(key), ticks >= 0 { return ticks / 10_000_000_000 }
+        }
+        return nil
+    }
+
+    private func firstUsageDictionary(in value: Any) -> [String: Any]? {
+        if let object = value as? [String: Any] {
+            if grokUsage(from: object) != nil { return object }
+            for key in ["usage", "tokenUsage", "token_usage", "totalUsage", "total_usage"] {
+                if let nested = object[key], let found = firstUsageDictionary(in: nested) { return found }
+            }
+            for nested in object.values {
+                if let found = firstUsageDictionary(in: nested) { return found }
+            }
+        } else if let values = value as? [Any] {
+            for nested in values {
+                if let found = firstUsageDictionary(in: nested) { return found }
+            }
+        }
+        return nil
+    }
+
+    private func firstDictionary(in value: Any, keys: [String]) -> [String: Any]? {
+        if let object = value as? [String: Any] {
+            for key in keys {
+                if let dictionary = object[key] as? [String: Any] { return dictionary }
+            }
+            for nested in object.values {
+                if let found = firstDictionary(in: nested, keys: keys) { return found }
+            }
+        } else if let values = value as? [Any] {
+            for nested in values {
+                if let found = firstDictionary(in: nested, keys: keys) { return found }
+            }
+        }
+        return nil
+    }
+
+    private func firstString(in value: Any, keys: [String]) -> String? {
+        if let object = value as? [String: Any] {
+            for key in keys {
+                if let string = object[key] as? String, !string.isEmpty { return string }
+            }
+            for nested in object.values {
+                if let found = firstString(in: nested, keys: keys) { return found }
+            }
+        } else if let values = value as? [Any] {
+            for nested in values {
+                if let found = firstString(in: nested, keys: keys) { return found }
+            }
+        }
+        return nil
+    }
+
+    private func firstDate(in value: Any) -> Date? {
+        let keys = ["timestamp", "ts", "createdAt", "created_at", "updatedAt", "updated_at", "startedAt", "started_at"]
+        if let object = value as? [String: Any] {
+            for key in keys {
+                if let string = object[key] as? String {
+                    if let date = parseDate(string) { return date }
+                    if let raw = Double(string) { return dateFromUnix(raw) }
+                }
+                if let raw = object.double(key) { return dateFromUnix(raw) }
+            }
+            for nested in object.values {
+                if let found = firstDate(in: nested) { return found }
+            }
+        } else if let values = value as? [Any] {
+            for nested in values {
+                if let found = firstDate(in: nested) { return found }
+            }
+        }
+        return nil
+    }
+
+    private func dateFromUnix(_ raw: Double) -> Date {
+        Date(timeIntervalSince1970: raw > 100_000_000_000 ? raw / 1_000 : raw)
+    }
+
+    private func scanZCode(
+        databaseURL: URL,
+        pricing: PricingCatalog
+    ) -> (records: [UsageRecord], scannedFiles: Int, warnings: [String]) {
+        guard fileManager.fileExists(atPath: databaseURL.path) else { return ([], 0, []) }
+
+        let query = """
+        select id, started_at, provider_id, model_id,
+               input_tokens, output_tokens, reasoning_tokens,
+               cache_creation_input_tokens, cache_read_input_tokens,
+               computed_total_tokens
+        from model_usage
+        where status = 'completed' and computed_total_tokens > 0;
+        """
+
+        let rows = SQLiteReader.rows(at: databaseURL, query: query, columnCount: 10)
+        let records = rows.compactMap { values -> UsageRecord? in
+            guard values.count == 10,
+                  let rawTimestamp = Double(values[1]) else { return nil }
+
+            let model = values[3].isEmpty ? "ZCode Auto" : values[3]
+            let inputTotal = max(0, Int(values[4]) ?? 0)
+            let output = max(0, Int(values[5]) ?? 0)
+            let reasoning = max(0, Int(values[6]) ?? 0)
+            let cacheWrite = max(0, Int(values[7]) ?? 0)
+            let cacheRead = max(0, Int(values[8]) ?? 0)
+            let computedTotal = max(0, Int(values[9]) ?? 0)
+            let usage = TokenUsage(
+                input: max(0, inputTotal - cacheRead - cacheWrite),
+                cachedInput: cacheRead,
+                cacheWrite: cacheWrite,
+                output: output,
+                reasoningOutput: reasoning,
+                total: computedTotal > 0 ? computedTotal : inputTotal + output + reasoning
+            )
+            let timestampSeconds = rawTimestamp > 100_000_000_000 ? rawTimestamp / 1_000 : rawTimestamp
+            let quote = pricing.quote(model: model, usage: usage)
+
+            return UsageRecord(
+                id: "zcode:\(values[0])",
+                timestamp: Date(timeIntervalSince1970: timestampSeconds),
+                tool: "ZCode",
+                provider: ProviderCatalog.providerName(for: model, fallback: "ZCode"),
+                model: model,
+                usage: usage,
+                costUSD: quote?.amountUSD,
+                costBasis: quote?.basis,
+                sourcePath: databaseURL.path
+            )
+        }
+
+        return (records, 1, [])
+    }
+
+    private func discoverAgents(records: [UsageRecord], locations: UsageSourceLocations) -> [AgentToolInfo] {
+        let requestCountsByTool = Dictionary(grouping: records, by: \.tool).mapValues(\.count)
+        let authorizedPaths: [String: [String]] = [
+            "claude-code": locations.claudeRoot.map { [$0.path] } ?? [],
+            "codex": locations.codexRoot.map { [$0.path] } ?? [],
+            "cc-switch": locations.ccSwitchRoot.map { [$0.path] } ?? [],
+            "cursor": locations.cursorRoot.map { [$0.path] } ?? [],
+            "grok-build": locations.grokRoot.map { [$0.path] } ?? [],
+            "zcode": locations.zcodeRoot.map { [$0.path] } ?? []
+        ]
+
         return ProviderCatalog.agentProbes.map { probe in
-            let detected = probe.paths.map(expandHome).filter { fileManager.fileExists(atPath: $0.path) }
-            let total = totalsByTool[probe.name] ?? (probe.id == "codex" ? totalsByTool["Codex"] ?? 0 : 0)
+            var detected = authorizedPaths[probe.id] ?? []
+            for rawPath in probe.paths {
+                let path = NSString(string: rawPath).expandingTildeInPath
+                if fileManager.fileExists(atPath: path), !detected.contains(path) {
+                    detected.append(path)
+                }
+            }
+            let requestCount = requestCountsByTool[probe.name] ?? 0
+            let hasModelUsage = probe.id == "grok-build" && records.contains {
+                $0.model.localizedCaseInsensitiveContains("grok-build")
+            }
             let status: ToolSupportStatus
-            if total > 0 {
+            if requestCount > 0 || hasModelUsage {
                 status = .liveData
             } else if !detected.isEmpty {
                 status = .detected
@@ -194,7 +638,7 @@ final class UsageScanner {
                 icon: probe.icon,
                 status: status,
                 canReadTokens: probe.canReadTokens,
-                detectedPaths: detected.map(\.path),
+                detectedPaths: detected,
                 note: probe.note
             )
         }
@@ -205,38 +649,15 @@ final class UsageScanner {
         var model: String
     }
 
-    private func loadCodexThreadMetadata() -> [String: CodexThreadMeta] {
-        let db = expandHome("~/.codex/state_5.sqlite")
-        guard fileManager.fileExists(atPath: db.path) else { return [:] }
+    private func loadCodexThreadMetadata(databaseURL: URL?) -> [String: CodexThreadMeta] {
+        guard let databaseURL,
+              fileManager.fileExists(atPath: databaseURL.path) else { return [:] }
 
         let query = "select id, coalesce(model_provider,''), coalesce(model,'') from threads;"
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-        process.arguments = ["-readonly", "-separator", "\t", db.path, query]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = Pipe()
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            return [:]
-        }
-
-        guard process.terminationStatus == 0 else { return [:] }
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output = String(decoding: data, as: UTF8.self)
         var result: [String: CodexThreadMeta] = [:]
-
-        for line in output.split(separator: "\n") {
-            let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard parts.count >= 3 else { continue }
-            result[parts[0]] = CodexThreadMeta(provider: parts[1], model: parts[2])
+        for values in SQLiteReader.rows(at: databaseURL, query: query, columnCount: 3) where values.count == 3 {
+            result[values[0]] = CodexThreadMeta(provider: values[1], model: values[2])
         }
-
         return result
     }
 
@@ -244,8 +665,8 @@ final class UsageScanner {
         guard fileManager.fileExists(atPath: root.path) else { return [] }
         guard let enumerator = fileManager.enumerator(
             at: root,
-            includingPropertiesForKeys: [.isRegularFileKey, .contentModificationDateKey],
-            options: [.skipsPackageDescendants]
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsPackageDescendants, .skipsHiddenFiles]
         ) else {
             return []
         }
@@ -257,7 +678,38 @@ final class UsageScanner {
         return result
     }
 
-    private func readJSONLines(_ file: URL, handle: @escaping ([String: Any]) -> Void, onError: @escaping (Error) -> Void) {
+    private func namedFiles(_ fileNames: [String], under root: URL) -> [URL] {
+        guard fileManager.fileExists(atPath: root.path) else { return [] }
+        let names = Set(fileNames)
+        guard let enumerator = fileManager.enumerator(
+            at: root,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsPackageDescendants]
+        ) else {
+            return []
+        }
+
+        var result: [URL] = []
+        for case let file as URL in enumerator where names.contains(file.lastPathComponent) {
+            result.append(file)
+        }
+        return result
+    }
+
+    private func readJSONObject(_ file: URL) -> [String: Any]? {
+        guard fileManager.fileExists(atPath: file.path),
+              let data = try? Data(contentsOf: file, options: [.mappedIfSafe]),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return object
+    }
+
+    private func readJSONLines(
+        _ file: URL,
+        handle: @escaping ([String: Any]) -> Void,
+        onError: @escaping (Error) -> Void
+    ) {
         do {
             let data = try Data(contentsOf: file, options: [.mappedIfSafe])
             let text = String(decoding: data, as: UTF8.self)
@@ -272,20 +724,6 @@ final class UsageScanner {
         } catch {
             onError(error)
         }
-    }
-
-    private func expandHome(_ path: String) -> URL {
-        if path == "~" {
-            return homeURL
-        }
-        if path.hasPrefix("~/") {
-            return homeURL.appendingPathComponent(String(path.dropFirst(2)))
-        }
-        return URL(fileURLWithPath: path)
-    }
-
-    private func fileModificationDate(_ url: URL) -> Date? {
-        (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
     }
 
     private func normalizeProvider(_ provider: String) -> String {
@@ -344,6 +782,15 @@ private extension Dictionary where Key == String, Value == Any {
         }
         if let value = self[key] as? String {
             return Double(value)
+        }
+        return nil
+    }
+
+    func firstInt(_ keys: [String]) -> Int? {
+        for key in keys where self[key] != nil {
+            if let value = self[key] as? Int { return value }
+            if let value = self[key] as? NSNumber { return value.intValue }
+            if let value = self[key] as? String, let parsed = Int(value) { return parsed }
         }
         return nil
     }

@@ -49,23 +49,13 @@ struct UsageRecord: Identifiable, Codable, Hashable {
     var costUSD: Double?
     var costBasis: CostBasis?
     var sourcePath: String
+    var requestCount: Int? = nil
 }
 
 enum ToolSupportStatus: String, Codable, Hashable {
     case liveData
     case detected
     case preset
-
-    var label: String {
-        switch self {
-        case .liveData:
-            return "有用量"
-        case .detected:
-            return "已识别"
-        case .preset:
-            return "预设"
-        }
-    }
 }
 
 struct AgentToolInfo: Identifiable, Codable, Hashable {
@@ -106,26 +96,13 @@ struct UsageSnapshot: Codable {
     )
 }
 
-enum UsagePeriod: String, CaseIterable, Identifiable {
+enum UsagePeriod: String, CaseIterable, Identifiable, Hashable {
     case today
     case week
     case month
     case all
 
     var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .today:
-            return "今天"
-        case .week:
-            return "7 天"
-        case .month:
-            return "30 天"
-        case .all:
-            return "全部"
-        }
-    }
 }
 
 struct UsageBreakdown: Identifiable {
@@ -187,6 +164,7 @@ extension UsageSnapshot {
 
         var total = TokenUsage.zero
         var cost = 0.0
+        var totalRequestCount = 0
         struct Accumulator {
             var subtitle: String
             var usage: TokenUsage = .zero
@@ -203,23 +181,26 @@ extension UsageSnapshot {
         var byDay: [Date: Accumulator] = [:]
 
         func append(_ record: UsageRecord, subtitle: String, to accumulator: inout Accumulator) {
+            let requestCount = max(record.requestCount ?? 1, 1)
             accumulator.subtitle = subtitle
             accumulator.usage.add(record.usage)
-            accumulator.requestCount += 1
+            accumulator.requestCount += requestCount
             if let recordCost = record.costUSD {
                 accumulator.costUSD += recordCost
-                accumulator.pricedRequestCount += 1
+                accumulator.pricedRequestCount += requestCount
             }
         }
 
         for record in filtered {
+            let requestCount = max(record.requestCount ?? 1, 1)
+            totalRequestCount += requestCount
             total.add(record.usage)
             if let recordCost = record.costUSD {
                 cost += recordCost
                 if record.costBasis == .reported {
-                    exactCostRequestCount += 1
+                    exactCostRequestCount += requestCount
                 } else {
-                    estimatedCostRequestCount += 1
+                    estimatedCostRequestCount += requestCount
                 }
             }
 
@@ -245,7 +226,7 @@ extension UsageSnapshot {
         return UsageOverview(
             total: total,
             costUSD: cost,
-            requestCount: filtered.count,
+            requestCount: totalRequestCount,
             pricedRequestCount: exactCostRequestCount + estimatedCostRequestCount,
             exactCostRequestCount: exactCostRequestCount,
             estimatedCostRequestCount: estimatedCostRequestCount,

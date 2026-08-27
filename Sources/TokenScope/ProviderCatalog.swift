@@ -16,6 +16,7 @@ enum ProviderCatalog {
         ProviderPreset(id: "openai", name: "OpenAI", category: "Foundation", icon: "sparkles", accentHex: "10A37F", featured: true),
         ProviderPreset(id: "anthropic", name: "Claude Official", category: "Foundation", icon: "a.circle.fill", accentHex: "D97745", featured: true),
         ProviderPreset(id: "codex", name: "Codex", category: "Agent", icon: "command.circle", accentHex: "111827", featured: false),
+        ProviderPreset(id: "cursor", name: "Cursor", category: "Agent", icon: "cursorarrow.motionlines", accentHex: "111827", featured: true),
         ProviderPreset(id: "kimi", name: "Kimi", category: "Foundation", icon: "k.circle.fill", accentHex: "5677FF", featured: true),
         ProviderPreset(id: "kimi-coding", name: "Kimi For Coding", category: "Coding", icon: "chevron.left.forwardslash.chevron.right", accentHex: "5B6CFF", featured: true),
         ProviderPreset(id: "deepseek", name: "DeepSeek", category: "Foundation", icon: "water.waves", accentHex: "4F7BFF", featured: false),
@@ -64,6 +65,10 @@ enum ProviderCatalog {
         ProviderPreset(id: "fireworks", name: "Fireworks AI", category: "Inference", icon: "sparkle", accentHex: "DC2626", featured: false),
         ProviderPreset(id: "azure-openai", name: "Azure OpenAI", category: "Cloud", icon: "cloud.bolt.fill", accentHex: "0078D4", featured: false),
         ProviderPreset(id: "vertex", name: "Vertex AI", category: "Cloud", icon: "v.circle.fill", accentHex: "34A853", featured: false),
+        ProviderPreset(id: "meta", name: "Meta Llama", category: "Foundation", icon: "infinity", accentHex: "0668E1", featured: false),
+        ProviderPreset(id: "ai21", name: "AI21 Labs", category: "Foundation", icon: "a.square.fill", accentHex: "111827", featured: false),
+        ProviderPreset(id: "cerebras", name: "Cerebras", category: "Inference", icon: "cpu.fill", accentHex: "F97316", featured: false),
+        ProviderPreset(id: "sambanova", name: "SambaNova", category: "Inference", icon: "wave.3.right.circle.fill", accentHex: "DC2626", featured: false),
         ProviderPreset(id: "nvidia", name: "Nvidia", category: "Inference", icon: "eye.fill", accentHex: "76B900", featured: false),
         ProviderPreset(id: "novita", name: "Novita AI", category: "Inference", icon: "triangle.fill", accentHex: "111827", featured: false),
         ProviderPreset(id: "huggingface", name: "Hugging Face", category: "Model Hub", icon: "face.smiling", accentHex: "FBBF24", featured: false),
@@ -84,11 +89,11 @@ enum ProviderCatalog {
         AgentProbe(id: "claude-code", name: "Claude Code", category: "CLI Agent", icon: "a.circle.fill", canReadTokens: true, note: "读取 ~/.claude/projects JSONL", paths: ["~/.claude/projects"]),
         AgentProbe(id: "codex", name: "Codex", category: "Desktop/CLI Agent", icon: "command.circle", canReadTokens: true, note: "读取 ~/.codex/sessions JSONL", paths: ["~/.codex/sessions", "~/Library/Application Support/Codex"]),
         AgentProbe(id: "cc-switch", name: "CC Switch", category: "Provider Manager", icon: "arrow.left.arrow.right.circle", canReadTokens: false, note: "作为供应商/代理配置入口识别", paths: ["~/Library/Application Support/cc-switch", "~/.cc-switch"]),
-        AgentProbe(id: "cursor", name: "Cursor", category: "IDE Agent", icon: "cursorarrow.motionlines", canReadTokens: false, note: "检测安装和配置，公开 token 字段随版本变化", paths: ["~/Library/Application Support/Cursor"]),
-        AgentProbe(id: "zcode", name: "ZCode", category: "IDE Agent", icon: "z.square.fill", canReadTokens: false, note: "检测 ZCode 应用目录和 ~/.zcode 日志，当前只在公开 token 字段存在时统计", paths: ["~/Library/Application Support/ZCode", "~/.zcode"]),
+        AgentProbe(id: "cursor", name: "Cursor", category: "IDE Agent", icon: "cursorarrow.motionlines", canReadTokens: true, note: "读取 Cursor state.vscdb 的请求、模型和上下文 Token", paths: ["~/Library/Application Support/Cursor"]),
+        AgentProbe(id: "zcode", name: "ZCode", category: "IDE Agent", icon: "z.square.fill", canReadTokens: true, note: "读取 ~/.zcode/cli/db/db.sqlite 的精确模型用量", paths: ["~/Library/Application Support/ZCode", "~/.zcode"]),
         AgentProbe(id: "grok-cli", name: "Grok CLI", category: "CLI Agent", icon: "xmark.circle.fill", canReadTokens: false, note: "检测 ~/.grok；精确 token 可通过 Grok External OTEL 接入", paths: ["~/.grok", "~/.local/bin/grok"]),
         AgentProbe(id: "grok-bot", name: "Grok Bot", category: "Desktop Agent", icon: "message.badge.circle.fill", canReadTokens: false, note: "检测 Grok Bot 应用目录", paths: ["~/Library/Application Support/Grok Bot", "~/.grokbot"]),
-        AgentProbe(id: "grok-build", name: "Grok Build", category: "Coding Agent", icon: "hammer.circle.fill", canReadTokens: false, note: "检测 Grok Build/Grok Code 相关目录；未发现公开 token 字段时只标记识别", paths: ["~/Library/Application Support/Grok Build", "~/Library/Application Support/Grok Code", "~/.grok/build", "~/.grok"]),
+        AgentProbe(id: "grok-build", name: "Grok Build", category: "Coding Agent", icon: "hammer.circle.fill", canReadTokens: true, note: "读取 ~/.grok 会话中的逐请求 Token 和本地汇总信号", paths: ["~/Library/Application Support/Grok Build", "~/Library/Application Support/Grok Code", "~/.grok/build", "~/.grok"]),
         AgentProbe(id: "cline", name: "Cline", category: "VS Code Agent", icon: "chevron.left.forwardslash.chevron.right", canReadTokens: false, note: "检测 VS Code 扩展数据目录", paths: ["~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev", "~/Library/Application Support/Cursor/User/globalStorage/saoudrizwan.claude-dev"]),
         AgentProbe(id: "roo-code", name: "Roo Code", category: "VS Code Agent", icon: "square.stack.3d.up", canReadTokens: false, note: "检测 Roo/Cline 系数据目录", paths: ["~/Library/Application Support/Code/User/globalStorage/rooveterinaryinc.roo-cline", "~/Library/Application Support/Cursor/User/globalStorage/rooveterinaryinc.roo-cline"]),
         AgentProbe(id: "continue", name: "Continue", category: "IDE Agent", icon: "play.circle", canReadTokens: false, note: "检测 ~/.continue", paths: ["~/.continue", "~/Library/Application Support/Code/User/globalStorage/continue.continue"]),
@@ -106,7 +111,7 @@ enum ProviderCatalog {
     static func providerName(for model: String, fallback: String = "Unknown") -> String {
         let lower = model.lowercased()
         if lower.contains("claude") { return "Anthropic" }
-        if lower.contains("gpt") || lower.contains("o1") || lower.contains("o3") || lower.contains("o4") { return "OpenAI" }
+        if lower.contains("gpt") || lower.contains("codex") || lower.contains("o1") || lower.contains("o3") || lower.contains("o4") { return "OpenAI" }
         if lower.contains("deepseek") { return "DeepSeek" }
         if lower.contains("gemini") { return "Google" }
         if lower.contains("kimi") || lower.contains("moonshot") { return "Kimi" }
@@ -116,6 +121,12 @@ enum ProviderCatalog {
         if lower.contains("grok") || lower.contains("xai") { return "xAI" }
         if lower.contains("mistral") || lower.contains("mixtral") { return "Mistral" }
         if lower.contains("llama") { return "Meta" }
+        if lower.contains("command-r") || lower.contains("command-a") { return "Cohere" }
+        if lower.contains("sonar") { return "Perplexity" }
+        if lower.contains("nova") { return "Amazon" }
+        if lower.contains("jamba") { return "AI21 Labs" }
+        if lower.contains("cerebras") { return "Cerebras" }
+        if lower.contains("composer") || lower.contains("cursor") { return "Cursor" }
         return fallback
     }
 }
