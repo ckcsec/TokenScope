@@ -11,6 +11,7 @@
 		100000000000000000000002 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* Models.swift */; };
 		100000000000000000000003 /* ProviderCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* ProviderCatalog.swift */; };
 		100000000000000000000004 /* PricingCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000004 /* PricingCatalog.swift */; };
+		100000000000000000000016 /* PricingCatalogFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* PricingCatalogFetcher.swift */; };
 		100000000000000000000005 /* SQLiteReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000005 /* SQLiteReader.swift */; };
 		100000000000000000000006 /* DataSourceAccessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* DataSourceAccessManager.swift */; };
 		100000000000000000000007 /* UsageScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* UsageScanner.swift */; };
@@ -32,6 +33,7 @@
 		200000000000000000000002 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		200000000000000000000003 /* ProviderCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderCatalog.swift; sourceTree = "<group>"; };
 		200000000000000000000004 /* PricingCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingCatalog.swift; sourceTree = "<group>"; };
+		200000000000000000000016 /* PricingCatalogFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PricingCatalogFetcher.swift; sourceTree = "<group>"; };
 		200000000000000000000005 /* SQLiteReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteReader.swift; sourceTree = "<group>"; };
 		200000000000000000000006 /* DataSourceAccessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataSourceAccessManager.swift; sourceTree = "<group>"; };
 		200000000000000000000007 /* UsageScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageScanner.swift; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 				200000000000000000000015 /* Localization.swift */,
 				200000000000000000000003 /* ProviderCatalog.swift */,
 				200000000000000000000004 /* PricingCatalog.swift */,
+				200000000000000000000016 /* PricingCatalogFetcher.swift */,
 				200000000000000000000005 /* SQLiteReader.swift */,
 				200000000000000000000006 /* DataSourceAccessManager.swift */,
 				200000000000000000000007 /* UsageScanner.swift */,
@@ -200,6 +203,7 @@
 				100000000000000000000012 /* Localization.swift in Sources */,
 				100000000000000000000003 /* ProviderCatalog.swift in Sources */,
 				100000000000000000000004 /* PricingCatalog.swift in Sources */,
+				100000000000000000000016 /* PricingCatalogFetcher.swift in Sources */,
 				100000000000000000000005 /* SQLiteReader.swift in Sources */,
 				100000000000000000000006 /* DataSourceAccessManager.swift in Sources */,
 				100000000000000000000007 /* UsageScanner.swift in Sources */,

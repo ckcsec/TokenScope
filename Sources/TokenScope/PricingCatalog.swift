@@ -2,8 +2,8 @@ import Foundation
 
 enum CostBasis: String, Codable, Hashable {
     case reported
-    case ccSwitch
     case builtIn
+    case remote
 
     var isEstimated: Bool {
         self != .reported
@@ -15,7 +15,7 @@ struct CostQuote {
     var basis: CostBasis
 }
 
-private struct ModelPrice {
+struct ModelPrice {
     var modelID: String
     var inputPerMillion: Double
     var outputPerMillion: Double
@@ -31,9 +31,9 @@ private struct ModelPrice {
 struct PricingCatalog {
     private var prices: [String: ModelPrice]
 
-    static func load(ccSwitchDatabaseURL: URL?) -> PricingCatalog {
+    static func load(remotePrices: [ModelPrice] = []) -> PricingCatalog {
         var prices = Dictionary(uniqueKeysWithValues: builtInPrices.map { ($0.modelID.lowercased(), $0) })
-        for price in loadCCSwitchPrices(databaseURL: ccSwitchDatabaseURL) {
+        for price in remotePrices {
             prices[price.modelID.lowercased()] = price
         }
         return PricingCatalog(prices: prices)
@@ -82,35 +82,7 @@ struct PricingCatalog {
         )
     }
 
-    private static func loadCCSwitchPrices(databaseURL: URL?) -> [ModelPrice] {
-        guard let databaseURL,
-              FileManager.default.fileExists(atPath: databaseURL.path) else { return [] }
-
-        let query = """
-        select model_id, input_cost_per_million, output_cost_per_million,
-               cache_read_cost_per_million, cache_creation_cost_per_million
-        from model_pricing;
-        """
-        return SQLiteReader.rows(at: databaseURL, query: query, columnCount: 5).compactMap { values in
-            guard values.count == 5,
-                  let input = Double(values[1]),
-                  let output = Double(values[2]),
-                  let cacheRead = Double(values[3]),
-                  let cacheWrite = Double(values[4]) else {
-                return nil
-            }
-            return ModelPrice(
-                modelID: values[0],
-                inputPerMillion: input,
-                outputPerMillion: output,
-                cacheReadPerMillion: cacheRead,
-                cacheWritePerMillion: cacheWrite,
-                basis: .ccSwitch
-            )
-        }
-    }
-
-    private static let builtInPrices: [ModelPrice] = [
+    static let builtInPrices: [ModelPrice] = [
         // OpenAI standard API pricing.
         ModelPrice(modelID: "gpt-5.6-sol", inputPerMillion: 5, outputPerMillion: 30, cacheReadPerMillion: 0.5, cacheWritePerMillion: 0, basis: .builtIn),
         ModelPrice(modelID: "gpt-5.6", inputPerMillion: 5, outputPerMillion: 30, cacheReadPerMillion: 0.5, cacheWritePerMillion: 0, basis: .builtIn),
@@ -122,7 +94,7 @@ struct PricingCatalog {
         ModelPrice(modelID: "gpt-5.2-codex", inputPerMillion: 1.75, outputPerMillion: 14, cacheReadPerMillion: 0.175, cacheWritePerMillion: 0, basis: .builtIn),
 
         // Anthropic standard API pricing (5-minute cache writes).
-        ModelPrice(modelID: "claude-opus-5", inputPerMillion: 10, outputPerMillion: 50, cacheReadPerMillion: 1, cacheWritePerMillion: 12.5, basis: .builtIn),
+        ModelPrice(modelID: "claude-opus-5", inputPerMillion: 5, outputPerMillion: 25, cacheReadPerMillion: 0.5, cacheWritePerMillion: 6.25, basis: .builtIn),
         ModelPrice(modelID: "claude-fable-5", inputPerMillion: 10, outputPerMillion: 50, cacheReadPerMillion: 1, cacheWritePerMillion: 12.5, basis: .builtIn),
         ModelPrice(modelID: "claude-mythos-5", inputPerMillion: 10, outputPerMillion: 50, cacheReadPerMillion: 1, cacheWritePerMillion: 12.5, basis: .builtIn),
         ModelPrice(modelID: "claude-opus-4-8", inputPerMillion: 5, outputPerMillion: 25, cacheReadPerMillion: 0.5, cacheWritePerMillion: 6.25, basis: .builtIn),
@@ -154,8 +126,14 @@ struct PricingCatalog {
         ModelPrice(modelID: "command-r-plus-08-2024", inputPerMillion: 2.5, outputPerMillion: 10, cacheReadPerMillion: 0, cacheWritePerMillion: 0, basis: .builtIn),
 
         // Common regional models retained for mixed-provider logs.
-        ModelPrice(modelID: "deepseek-v4-pro", inputPerMillion: 0.435, outputPerMillion: 0.87, cacheReadPerMillion: 0.003625, cacheWritePerMillion: 0, basis: .builtIn),
+        // DeepSeek V4 uses time-of-day pricing (effective 2026-08-17); off-peak rates, peak is 2×.
+        ModelPrice(modelID: "deepseek-v4-pro", inputPerMillion: 0.63, outputPerMillion: 1.9, cacheReadPerMillion: 0.021, cacheWritePerMillion: 0, basis: .builtIn),
+        ModelPrice(modelID: "deepseek-v4-flash", inputPerMillion: 0.21, outputPerMillion: 0.63, cacheReadPerMillion: 0.007, cacheWritePerMillion: 0, basis: .builtIn),
+        ModelPrice(modelID: "glm-5.3", inputPerMillion: 1.4, outputPerMillion: 4.4, cacheReadPerMillion: 0.26, cacheWritePerMillion: 0, basis: .builtIn),
+        ModelPrice(modelID: "glm-5.3-flash", inputPerMillion: 0.15, outputPerMillion: 0.5, cacheReadPerMillion: 0.03, cacheWritePerMillion: 0, basis: .builtIn),
         ModelPrice(modelID: "glm-5.2", inputPerMillion: 1.4, outputPerMillion: 4.4, cacheReadPerMillion: 0.26, cacheWritePerMillion: 0, basis: .builtIn),
-        ModelPrice(modelID: "kimi-k2.7-code", inputPerMillion: 0.95, outputPerMillion: 4, cacheReadPerMillion: 0.19, cacheWritePerMillion: 0, basis: .builtIn)
+        ModelPrice(modelID: "kimi-k3", inputPerMillion: 3, outputPerMillion: 15, cacheReadPerMillion: 0.3, cacheWritePerMillion: 3.5, basis: .builtIn),
+        ModelPrice(modelID: "kimi-k2.7-code", inputPerMillion: 0.95, outputPerMillion: 4, cacheReadPerMillion: 0.19, cacheWritePerMillion: 0, basis: .builtIn),
+        ModelPrice(modelID: "qwen3.8-max", inputPerMillion: 2, outputPerMillion: 6, cacheReadPerMillion: 0.25, cacheWritePerMillion: 2.5, basis: .builtIn)
     ]
 }

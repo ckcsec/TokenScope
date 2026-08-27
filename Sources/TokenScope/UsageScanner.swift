@@ -3,7 +3,11 @@ import Foundation
 final class UsageScanner: @unchecked Sendable {
     private let fileManager = FileManager.default
 
-    func scan(locations: UsageSourceLocations, previousSnapshot: UsageSnapshot? = nil) -> UsageSnapshot {
+    func scan(
+        locations: UsageSourceLocations,
+        previousSnapshot: UsageSnapshot? = nil,
+        remotePrices: [ModelPrice] = []
+    ) -> UsageSnapshot {
         var activeSecurityScopes: [URL] = []
         for url in locations.securityScopedRoots where url.startAccessingSecurityScopedResource() {
             activeSecurityScopes.append(url)
@@ -15,7 +19,7 @@ final class UsageScanner: @unchecked Sendable {
         var warnings: [String] = []
         var scannedFiles = 0
         var records: [UsageRecord] = []
-        let pricing = PricingCatalog.load(ccSwitchDatabaseURL: locations.ccSwitchDatabaseURL)
+        let pricing = PricingCatalog.load(remotePrices: remotePrices)
         let previousRecordsByPath = Dictionary(grouping: previousSnapshot?.records ?? [], by: \.sourcePath)
         let previousGeneratedAt = previousSnapshot?.generatedAt
 
@@ -184,6 +188,17 @@ final class UsageScanner: @unchecked Sendable {
                     if let meta = threadMetadata[sessionID] {
                         modelProvider = meta.provider.isEmpty ? modelProvider : meta.provider
                         model = meta.model.isEmpty ? model : meta.model
+                    }
+                    return
+                }
+
+                if object.string("type") == "turn_context", let payload = object.dictionary("payload") {
+                    if let contextModel = payload.string("model") {
+                        model = contextModel
+                    } else if let mode = payload.dictionary("collaboration_mode"),
+                              let settings = mode.dictionary("settings"),
+                              let contextModel = settings.string("model") {
+                        model = contextModel
                     }
                     return
                 }
@@ -604,7 +619,6 @@ final class UsageScanner: @unchecked Sendable {
         let authorizedPaths: [String: [String]] = [
             "claude-code": locations.claudeRoot.map { [$0.path] } ?? [],
             "codex": locations.codexRoot.map { [$0.path] } ?? [],
-            "cc-switch": locations.ccSwitchRoot.map { [$0.path] } ?? [],
             "cursor": locations.cursorRoot.map { [$0.path] } ?? [],
             "grok-build": locations.grokRoot.map { [$0.path] } ?? [],
             "zcode": locations.zcodeRoot.map { [$0.path] } ?? []

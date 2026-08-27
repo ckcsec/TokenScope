@@ -1,0 +1,24 @@
+name: Pricing drift check
+
+on:
+  schedule:
+    # Mondays 01:00 UTC (09:00 Beijing)
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pricing.json matches the built-in table
+        run: swift test --filter testPricingJSONMatchesBuiltInTable
+      - name: Open issue on drift
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "pricing.json 与内置价格表不一致" \
+            --body "workflow「Pricing drift check」检测到仓库根目录的 pricing.json 与 Sources/TokenScope/PricingCatalog.swift 中的内置价格表出现漂移。更新价格时请同步修改两侧，并重新运行校验。" \
+            --repo "${{ github.repository }}"

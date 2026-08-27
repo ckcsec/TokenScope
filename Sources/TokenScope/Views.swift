@@ -57,6 +57,7 @@ struct TokenScopeRootView: View {
                         contentGrid
                         liveAgentSection
                         DataSourcePanel(dataSources: dataSources, store: store)
+                        githubFooter
                     }
                     .padding(.horizontal, 22)
                     .padding(.bottom, 22)
@@ -273,6 +274,23 @@ struct TokenScopeRootView: View {
             .panelBackground()
         }
     }
+
+    private var githubFooter: some View {
+        Button {
+            NSWorkspace.shared.open(TokenScopeRepoURL)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "link")
+                    .font(.system(size: 9, weight: .semibold))
+                Text("github.com/ckcsec/TokenScope")
+                    .font(.system(size: 11))
+            }
+            .foregroundStyle(TokenScopePalette.secondaryInk.opacity(0.7))
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .help(language.text("打开项目主页", "開啟專案主頁", "Open project homepage"))
+    }
 }
 
 struct DataSourcePanel: View {
@@ -330,6 +348,40 @@ struct DataSourcePanel: View {
                             store.reloadForSourceChange()
                         }
                     )
+                }
+            }
+
+            Divider()
+
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(TokenScopePalette.blue)
+                Text(language.text("价格表自动更新", "價格表自動更新", "Auto-update pricing"))
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { store.pricingAutoUpdateEnabled },
+                    set: { store.setPricingAutoUpdateEnabled($0) }
+                ))
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .labelsHidden()
+            }
+
+                HStack(spacing: 6) {
+                Text(language.text(
+                    "日志金额优先，否则按价格表估算",
+                    "日誌金額優先，否則按價格表估算",
+                    "Log amounts first, then catalog pricing"
+                ))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let lastFetched = store.pricingLastFetchedAt {
+                    Text(language.text("更新于", "更新於", "Updated")
+                        + " \(lastFetched.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
                 }
             }
         }

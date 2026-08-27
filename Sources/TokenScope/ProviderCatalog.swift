@@ -88,7 +88,6 @@ enum ProviderCatalog {
     static let agentProbes: [AgentProbe] = [
         AgentProbe(id: "claude-code", name: "Claude Code", category: "CLI Agent", icon: "a.circle.fill", canReadTokens: true, note: "读取 ~/.claude/projects JSONL", paths: ["~/.claude/projects"]),
         AgentProbe(id: "codex", name: "Codex", category: "Desktop/CLI Agent", icon: "command.circle", canReadTokens: true, note: "读取 ~/.codex/sessions JSONL", paths: ["~/.codex/sessions", "~/Library/Application Support/Codex"]),
-        AgentProbe(id: "cc-switch", name: "CC Switch", category: "Provider Manager", icon: "arrow.left.arrow.right.circle", canReadTokens: false, note: "作为供应商/代理配置入口识别", paths: ["~/Library/Application Support/cc-switch", "~/.cc-switch"]),
         AgentProbe(id: "cursor", name: "Cursor", category: "IDE Agent", icon: "cursorarrow.motionlines", canReadTokens: true, note: "读取 Cursor state.vscdb 的请求、模型和上下文 Token", paths: ["~/Library/Application Support/Cursor"]),
         AgentProbe(id: "zcode", name: "ZCode", category: "IDE Agent", icon: "z.square.fill", canReadTokens: true, note: "读取 ~/.zcode/cli/db/db.sqlite 的精确模型用量", paths: ["~/Library/Application Support/ZCode", "~/.zcode"]),
         AgentProbe(id: "grok-cli", name: "Grok CLI", category: "CLI Agent", icon: "xmark.circle.fill", canReadTokens: false, note: "检测 ~/.grok；精确 token 可通过 Grok External OTEL 接入", paths: ["~/.grok", "~/.local/bin/grok"]),

@@ -13,18 +13,17 @@ struct TokenScopeApp: App {
     }
 }
 
+let TokenScopeRepoURL = URL(string: "https://github.com/ckcsec/TokenScope")!
+
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private let popover = NSPopover()
+    private var mainWindow: NSWindow?
     private let language: LanguageController
     private let dataSources: DataSourceAccessManager
     private let store: UsageStore
     private let launchAtLogin: LaunchAtLoginController
     private var languageObserver: AnyCancellable?
-    #if DEBUG
-    private var previewWindow: NSWindow?
-    #endif
 
     override init() {
         let language = LanguageController()
@@ -52,17 +51,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             return
         }
 
+        configureStatusItem()
+        showMainWindow()
         #if DEBUG
-        if CommandLine.arguments.contains("--preview-window") {
-            showPreviewWindow()
+        if CommandLine.arguments.contains("--preview-demo") {
+            store.showDemo()
             return
         }
         #endif
-
-        NSApplication.shared.setActivationPolicy(.accessory)
-        configurePopover()
-        configureStatusItem()
         store.refresh()
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
     }
 
     private func configureStatusItem() {
@@ -73,15 +74,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.title = ""
         item.button?.toolTip = statusItemTooltip
         item.button?.target = self
-        item.button?.action = #selector(togglePopover(_:))
+        item.button?.action = #selector(handleStatusItemClick(_:))
+        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         statusItem = item
     }
 
-    private func configurePopover() {
-        popover.behavior = .transient
-        popover.animates = true
-        popover.contentSize = NSSize(width: 1040, height: 720)
-        popover.contentViewController = NSHostingController(
+    @objc private func handleStatusItemClick(_ sender: AnyObject?) {
+        guard NSApp.currentEvent?.type == .rightMouseUp else {
+            toggleMainWindow()
+            return
+        }
+        statusItem?.menu = makeStatusMenu()
+        statusItem?.button?.performClick(nil)
+        statusItem?.menu = nil
+    }
+
+    private func toggleMainWindow() {
+        guard let mainWindow else { return }
+        if mainWindow.isVisible {
+            mainWindow.orderOut(nil)
+        } else {
+            showMainWindow()
+            store.refresh()
+        }
+    }
+
+    private func makeStatusMenu() -> NSMenu {
+        let menu = NSMenu()
+
+        let githubItem = NSMenuItem(title: "GitHub", action: #selector(openGitHub), keyEquivalent: "")
+        githubItem.target = self
+        menu.addItem(githubItem)
+
+        menu.addItem(.separator())
+
+        let quitItem = NSMenuItem(
+            title: language.text("退出 TokenScope", "結束 TokenScope", "Quit TokenScope"),
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        quitItem.target = NSApp
+        menu.addItem(quitItem)
+
+        return menu
+    }
+
+    @objc private func openGitHub() {
+        NSWorkspace.shared.open(TokenScopeRepoURL)
+    }
+
+    private func showMainWindow() {
+        if let mainWindow {
+            mainWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            launchAtLogin.refresh()
+            return
+        }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 1040, height: 720),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "TokenScope"
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.contentViewController = NSHostingController(
             rootView: TokenScopeRootView(
                 store: store,
                 launchAtLogin: launchAtLogin,
@@ -89,32 +148,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             )
             .environmentObject(language)
         )
-    }
-
-    #if DEBUG
-    private func showPreviewWindow() {
-        NSApplication.shared.setActivationPolicy(.regular)
-        let content = TokenScopeRootView(
-            store: store,
-            launchAtLogin: launchAtLogin,
-            dataSources: dataSources
-        )
-        .environmentObject(language)
-        let controller = NSHostingController(rootView: content)
-        let window = NSWindow(contentViewController: controller)
-        window.title = "TokenScope Preview"
-        window.setContentSize(NSSize(width: 1040, height: 720))
-        window.center()
+        mainWindow = window
         window.makeKeyAndOrderFront(nil)
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        previewWindow = window
-        if CommandLine.arguments.contains("--preview-demo") {
-            store.showDemo()
-        } else {
-            store.refresh(force: true)
-        }
+        NSApp.activate(ignoringOtherApps: true)
+        launchAtLogin.refresh()
     }
-    #endif
 
     private var statusItemTooltip: String {
         language.text(
@@ -126,18 +164,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     private func updateStatusItemTooltip() {
         statusItem?.button?.toolTip = statusItemTooltip
-    }
-
-    @objc private func togglePopover(_ sender: AnyObject?) {
-        guard let button = statusItem?.button else { return }
-        if popover.isShown {
-            popover.performClose(sender)
-        } else {
-            launchAtLogin.refresh()
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
-            store.refresh()
-        }
     }
 
     private func runScanOnce() {

@@ -1,12 +1,20 @@
+# TokenScope 1.1.0
+
+- 彻底移除 CC Switch 依赖；价格表改为内置 + 每 24 小时自动从仓库 `pricing.json` 更新，失败自动回退，可在设置中关闭
+- 新增 GLM-5.3 / GLM-5.3-Flash / Kimi K3 / Qwen3.8-Max / DeepSeek V4-Flash 价格，按 8 月官方新价更新 DeepSeek V4-Pro，修正 Claude Opus 5 官方定价
+- 启动即显示主窗口；关闭窗口后驻留状态栏，点击图标重新打开、右键菜单退出
+- Codex 会话模型归属改为从会话文件自身的 turn_context 解析，不再依赖外部状态数据库
+- 面板底部新增 GitHub 项目链接
+
 # TokenScope 1.0.0
 
 首个 GitHub 公开版本。TokenScope 是一个完全在本机运行的 macOS AI Agent Token 用量面板。
 
 ## 主要功能
 
-- 菜单栏纯图标入口，点击显示 Token、请求数和 API 等值成本
+- 启动显示主窗口，关闭后驻留菜单栏，点击图标重新打开、右键退出
 - 支持 Claude Code、Codex、Cursor、Grok Build 与 ZCode 的真实本地用量
-- 使用 CC Switch 本机价格表，并提供常见模型价格兜底
+- 内置公开模型价格表，覆盖主流国际与区域模型
 - Agent、Provider、模型、日期四个维度的统计与排行
 - 趋势图悬停查看 Token、缓存 Token、缓存命中率和请求数
 - 简体中文、繁体中文、英文即时切换

@@ -9,18 +9,34 @@ final class UsageStore: ObservableObject {
 
     private let scanner: UsageScanner
     private let dataSources: DataSourceAccessManager
+    private let pricingFetcher: PricingCatalogFetcher
     private let cacheURL: URL
     private let refreshInterval: TimeInterval = 5 * 60
     private var scanGeneration = 0
     private var baseOverviews: [UsagePeriod: UsageOverview] = [:]
     private var queryOverviews: [OverviewCacheKey: UsageOverview] = [:]
 
-    init(dataSources: DataSourceAccessManager, scanner: UsageScanner = UsageScanner()) {
+    @Published var pricingAutoUpdateEnabled: Bool
+    @Published private(set) var pricingLastFetchedAt: Date?
+
+    init(
+        dataSources: DataSourceAccessManager,
+        scanner: UsageScanner = UsageScanner(),
+        pricingFetcher: PricingCatalogFetcher = PricingCatalogFetcher()
+    ) {
         self.dataSources = dataSources
         self.scanner = scanner
+        self.pricingFetcher = pricingFetcher
+        self.pricingAutoUpdateEnabled = pricingFetcher.isAutoUpdateEnabled
+        self.pricingLastFetchedAt = pricingFetcher.lastFetchedAt
         let supportDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("TokenScope", isDirectory: true)
         self.cacheURL = supportDirectory.appendingPathComponent("usage-snapshot.json")
+    }
+
+    func setPricingAutoUpdateEnabled(_ enabled: Bool) {
+        pricingAutoUpdateEnabled = enabled
+        pricingFetcher.setAutoUpdateEnabled(enabled)
     }
 
     func overview(period: UsagePeriod, query: String = "") -> UsageOverview {
@@ -67,12 +83,15 @@ final class UsageStore: ObservableObject {
             }
 
             let scanner = self.scanner
+            let pricingFetcher = self.pricingFetcher
             let previousSnapshot = force || self.snapshot.records.isEmpty ? nil : self.snapshot
             let scanPriority: TaskPriority = force ? .userInitiated : .utility
             let prepared = await Task.detached(priority: scanPriority) {
-                prepareSnapshot(scanner.scan(locations: locations, previousSnapshot: previousSnapshot))
+                let remotePrices = await pricingFetcher.refreshIfNeeded()
+                return prepareSnapshot(scanner.scan(locations: locations, previousSnapshot: previousSnapshot, remotePrices: remotePrices))
             }.value
             guard generation == self.scanGeneration else { return }
+            self.pricingLastFetchedAt = pricingFetcher.lastFetchedAt
             self.apply(prepared)
             self.isScanning = false
             Task.detached(priority: .utility) {

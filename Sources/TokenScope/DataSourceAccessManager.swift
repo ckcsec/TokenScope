@@ -5,7 +5,6 @@ import Foundation
 enum UsageDataSourceKind: String, CaseIterable, Identifiable {
     case claudeCode
     case codex
-    case ccSwitch
     case cursor
     case grok
     case zcode
@@ -18,8 +17,6 @@ enum UsageDataSourceKind: String, CaseIterable, Identifiable {
             return "a.circle.fill"
         case .codex:
             return "command.circle.fill"
-        case .ccSwitch:
-            return "dollarsign.circle.fill"
         case .cursor:
             return "cursorarrow.motionlines"
         case .grok:
@@ -35,8 +32,6 @@ enum UsageDataSourceKind: String, CaseIterable, Identifiable {
             return ".claude"
         case .codex:
             return ".codex"
-        case .ccSwitch:
-            return ".cc-switch"
         case .cursor:
             return "Cursor"
         case .grok:
@@ -54,7 +49,6 @@ enum UsageDataSourceKind: String, CaseIterable, Identifiable {
 struct UsageSourceLocations: Sendable {
     var claudeRoot: URL?
     var codexRoot: URL?
-    var ccSwitchRoot: URL?
     var cursorRoot: URL?
     var grokRoot: URL?
     var zcodeRoot: URL?
@@ -73,10 +67,6 @@ struct UsageSourceLocations: Sendable {
         return UsageSourceLocations(
             claudeRoot: existing([home.appendingPathComponent(".claude", isDirectory: true)]),
             codexRoot: existing([home.appendingPathComponent(".codex", isDirectory: true)]),
-            ccSwitchRoot: existing([
-                home.appendingPathComponent(".cc-switch", isDirectory: true),
-                applicationSupport.appendingPathComponent("cc-switch", isDirectory: true)
-            ]),
             cursorRoot: existing([applicationSupport.appendingPathComponent("Cursor", isDirectory: true)]),
             grokRoot: existing([home.appendingPathComponent(".grok", isDirectory: true)]),
             zcodeRoot: existing([home.appendingPathComponent(".zcode", isDirectory: true)])
@@ -101,13 +91,6 @@ struct UsageSourceLocations: Sendable {
         guard let codexRoot else { return nil }
         let root = codexRoot.lastPathComponent == "sessions" ? codexRoot.deletingLastPathComponent() : codexRoot
         return root.appendingPathComponent("state_5.sqlite")
-    }
-
-    var ccSwitchDatabaseURL: URL? {
-        guard let ccSwitchRoot else { return nil }
-        return ccSwitchRoot.pathExtension == "db"
-            ? ccSwitchRoot
-            : ccSwitchRoot.appendingPathComponent("cc-switch.db")
     }
 
     var cursorDatabaseURL: URL? {
@@ -138,7 +121,7 @@ struct UsageSourceLocations: Sendable {
 
     var securityScopedRoots: [URL] {
         var seen = Set<String>()
-        return [claudeRoot, codexRoot, ccSwitchRoot, cursorRoot, grokRoot, zcodeRoot].compactMap { url in
+        return [claudeRoot, codexRoot, cursorRoot, grokRoot, zcodeRoot].compactMap { url in
             guard let url else { return nil }
             let path = url.standardizedFileURL.path
             guard seen.insert(path).inserted else { return nil }
@@ -287,8 +270,6 @@ final class DataSourceAccessManager: ObservableObject {
             fallback = defaults.claudeRoot
         case .codex:
             fallback = defaults.codexRoot
-        case .ccSwitch:
-            fallback = defaults.ccSwitchRoot
         case .cursor:
             fallback = defaults.cursorRoot
         case .grok:
@@ -344,9 +325,6 @@ final class DataSourceAccessManager: ObservableObject {
             return url.lastPathComponent == "sessions"
                 || fileManager.fileExists(atPath: url.appendingPathComponent("sessions").path)
                 || fileManager.fileExists(atPath: url.appendingPathComponent("state_5.sqlite").path)
-        case .ccSwitch:
-            return fileManager.fileExists(atPath: url.appendingPathComponent("cc-switch.db").path)
-                || (url.pathExtension == "db" && fileManager.fileExists(atPath: url.path))
         case .cursor:
             return fileManager.fileExists(atPath: url.appendingPathComponent("User/globalStorage/state.vscdb").path)
                 || fileManager.fileExists(atPath: url.appendingPathComponent("state.vscdb").path)
@@ -366,8 +344,6 @@ final class DataSourceAccessManager: ObservableObject {
             return locations.claudeRoot
         case .codex:
             return locations.codexRoot
-        case .ccSwitch:
-            return locations.ccSwitchRoot
         case .cursor:
             return locations.cursorRoot
         case .grok:
@@ -383,8 +359,6 @@ final class DataSourceAccessManager: ObservableObject {
             locations.claudeRoot = url
         case .codex:
             locations.codexRoot = url
-        case .ccSwitch:
-            locations.ccSwitchRoot = url
         case .cursor:
             locations.cursorRoot = url
         case .grok:

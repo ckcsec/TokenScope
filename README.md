@@ -25,7 +25,7 @@
 
 ## 功能
 
-- 菜单栏只显示一个图表图标，点击即看，不占用应用名称宽度
+- 启动即打开主窗口；关闭窗口后驻留状态栏，点击图标随时重新打开，右键图标可直接退出
 - 统计总 Token、输入、输出、缓存、总请求数与 API 等值成本
 - 按 Agent、Provider、模型和日期拆分用量
 - 趋势图悬停显示当日 Token、缓存 Token、缓存命中率与请求数
@@ -33,6 +33,7 @@
 - 后台常驻，可由用户主动开启登录时启动
 - 本地缓存与增量扫描，大型历史日志也能快速打开面板
 - 仅展示实际读取到用量的数据源，不用预设列表冒充支持
+- 价格表默认每 24 小时从本仓库自动更新，失败时回退内置公开模型价格（可在设置中关闭）
 
 ## 数据源
 
@@ -40,12 +41,11 @@
 | --- | --- | --- | --- |
 | Claude Code | `~/.claude/projects/**/*.jsonl` | 输入、输出、缓存、请求、模型 | 日志金额或模型价格估算 |
 | Codex | `~/.codex/sessions/**/*.jsonl` | 输入、输出、缓存、请求、模型 | 日志金额或模型价格估算 |
-| [CC Switch](https://github.com/farion1231/cc-switch) | `~/.cc-switch/cc-switch.db` | 本机模型价格表 | 作为价格来源 |
 | Cursor | `state.vscdb` | Agent 请求、模型、请求时上下文 Token | 不推测订阅实付费用 |
 | Grok Build | `~/.grok/sessions` | 逐请求 Token、模型调用数、服务返回费用 | 优先使用会话精确费用 |
 | ZCode | `~/.zcode/cli/db/db.sqlite` | 输入、输出、推理、缓存、请求、模型 | 日志金额或模型价格估算 |
 
-费用不是银行卡或订阅账单。TokenScope 优先采用日志里的实际金额，否则使用 CC Switch 价格或内置公开模型价格计算 API 等值成本。Cursor 目前只提供请求发起时的上下文 Token，因此显示用量和模型，但不虚构费用。
+费用不是银行卡或订阅账单。TokenScope 优先采用日志里的实际金额，否则使用远程价格目录（`pricing.json`，每 24 小时自动更新一次、失败自动回退）或内置公开模型价格计算 API 等值成本。Cursor 目前只提供请求发起时的上下文 Token，因此显示用量和模型，但不虚构费用。
 
 <table>
   <tr>
@@ -60,7 +60,7 @@
 
 ## 隐私
 
-TokenScope 不包含账号、广告、分析 SDK、遥测或云同步。日志和 SQLite 数据库仅在本机只读解析，不上传提示词、回复正文、Token 元数据或费用数据。应用只保存最近一次统计缓存和界面偏好。详见 [隐私说明](PRIVACY_POLICY.md)。
+TokenScope 不包含账号、广告、分析 SDK、遥测或云同步。日志和 SQLite 数据库仅在本机只读解析，不上传提示词、回复正文、Token 元数据或费用数据。应用唯一的网络请求是下载本仓库的 `pricing.json` 价格目录（纯下载、不上传任何数据），可在设置中关闭。应用只保存最近一次统计缓存、价格目录缓存和界面偏好。详见 [隐私说明](PRIVACY_POLICY.md)。
 
 ## 从源码运行
 
@@ -89,9 +89,7 @@ swift test
 
 ## 致谢
 
-TokenScope 最初的本机统计方向和价格表兼容思路受 [CC Switch](https://github.com/farion1231/cc-switch) 启发，并可只读使用其本机 `cc-switch.db` 作为模型价格来源。感谢 CC Switch 作者与社区为 Claude Code、Codex 等 Agent 的 Provider 管理和本地工具生态所做的工作。
-
-两个项目定位互补：CC Switch 专注 Provider、配置与 Agent 管理，TokenScope 专注跨 Agent 的只读 Token 用量、趋势和 API 等值成本统计。TokenScope 不捆绑或替代 CC Switch。
+TokenScope 的本机统计与价格估算思路早期受 [CC Switch](https://github.com/farion1231/cc-switch) 等本地工具生态启发。TokenScope 现已完全独立，不依赖、不捆绑任何第三方应用：价格数据来自内置的公开模型价格表，用量统计只读取各 Agent 自身的本机日志。
 
 ## 参与贡献
 

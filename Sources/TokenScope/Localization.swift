@@ -101,8 +101,6 @@ final class LanguageController: ObservableObject {
             return "Claude Code"
         case .codex:
             return "Codex"
-        case .ccSwitch:
-            return text("CC Switch 价格", "CC Switch 價格", "CC Switch pricing")
         case .cursor:
             return "Cursor"
         case .grok:
@@ -139,8 +137,6 @@ final class LanguageController: ObservableObject {
             return text("读取 Claude Code 本地 JSONL 用量", "讀取 Claude Code 本機 JSONL 用量", "Reads local Claude Code JSONL usage")
         case "codex":
             return text("读取 Codex 本地会话 Token", "讀取 Codex 本機工作階段 Token", "Reads tokens from local Codex sessions")
-        case "cc-switch":
-            return text("读取 CC Switch 模型价格目录", "讀取 CC Switch 模型價格目錄", "Reads the CC Switch model pricing catalog")
         case "cursor":
             return text("读取 Cursor 请求、模型和上下文 Token", "讀取 Cursor 請求、模型和內容 Token", "Reads Cursor requests, models, and context tokens")
         case "grok-build":
