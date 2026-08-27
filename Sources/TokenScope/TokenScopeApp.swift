@@ -66,6 +66,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            showMainWindow()
+            return false
+        }
+        return true
+    }
+
     private func configureStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(systemSymbolName: "chart.bar.xaxis", accessibilityDescription: "TokenScope")
@@ -91,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func toggleMainWindow() {
         guard let mainWindow else { return }
-        if mainWindow.isVisible {
+        if mainWindow.isVisible && !mainWindow.isMiniaturized {
             mainWindow.orderOut(nil)
         } else {
             showMainWindow()
@@ -125,6 +133,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showMainWindow() {
         if let mainWindow {
+            if mainWindow.isMiniaturized {
+                mainWindow.deminiaturize(nil)
+            }
             mainWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             launchAtLogin.refresh()
