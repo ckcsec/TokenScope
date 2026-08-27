@@ -40,7 +40,7 @@
 | --- | --- | --- | --- |
 | Claude Code | `~/.claude/projects/**/*.jsonl` | 输入、输出、缓存、请求、模型 | 日志金额或模型价格估算 |
 | Codex | `~/.codex/sessions/**/*.jsonl` | 输入、输出、缓存、请求、模型 | 日志金额或模型价格估算 |
-| CC Switch | `~/.cc-switch/cc-switch.db` | 本机模型价格表 | 作为价格来源 |
+| [CC Switch](https://github.com/farion1231/cc-switch) | `~/.cc-switch/cc-switch.db` | 本机模型价格表 | 作为价格来源 |
 | Cursor | `state.vscdb` | Agent 请求、模型、请求时上下文 Token | 不推测订阅实付费用 |
 | Grok Build | `~/.grok/sessions` | 逐请求 Token、模型调用数、服务返回费用 | 优先使用会话精确费用 |
 | ZCode | `~/.zcode/cli/db/db.sqlite` | 输入、输出、推理、缓存、请求、模型 | 日志金额或模型价格估算 |
@@ -86,6 +86,12 @@ swift test
 ```
 
 若配置了 Developer ID 和公证凭据，可通过 `CODESIGN_IDENTITY` 与 `NOTARY_PROFILE` 环境变量生成无 Gatekeeper 警告的发行包。
+
+## 致谢
+
+TokenScope 最初的本机统计方向和价格表兼容思路受 [CC Switch](https://github.com/farion1231/cc-switch) 启发，并可只读使用其本机 `cc-switch.db` 作为模型价格来源。感谢 CC Switch 作者与社区为 Claude Code、Codex 等 Agent 的 Provider 管理和本地工具生态所做的工作。
+
+两个项目定位互补：CC Switch 专注 Provider、配置与 Agent 管理，TokenScope 专注跨 Agent 的只读 Token 用量、趋势和 API 等值成本统计。TokenScope 不捆绑或替代 CC Switch。
 
 ## 参与贡献
 
