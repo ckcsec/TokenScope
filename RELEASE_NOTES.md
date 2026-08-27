@@ -1,3 +1,8 @@
+# TokenScope 1.1.1
+
+- 修复关闭窗口后点击 Dock 图标无法重新打开主窗口的问题（实现 applicationShouldHandleReopen）
+- 修复窗口最小化后点击 Dock 或菜单栏图标不还原的问题
+
 # TokenScope 1.1.0
 
 - 彻底移除 CC Switch 依赖；价格表改为内置 + 每 24 小时自动从仓库 `pricing.json` 更新，失败自动回退，可在设置中关闭
