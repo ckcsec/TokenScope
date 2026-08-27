@@ -13,6 +13,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/ckcsec/TokenScope" alt="MIT license"></a>
 </p>
 
+<p align="center">
+  <b><a href="#tokenscope">English</a></b> · <a href="#中文版">中文</a>
+</p>
+
 ![TokenScope usage dashboard](docs/dashboard-zh-Hans.png)
 
 ## Download & Install
@@ -103,6 +107,10 @@ Issues are welcome for new agent log formats, statistic deviations, or UI proble
 ---
 
 # 中文版
+
+<p align="center">
+  <a href="#tokenscope">English</a> · <b>中文</b>
+</p>
 
 <p align="center">macOS 本地的 AI Agent Token、请求数与 API 等值成本面板——启动即开主窗口，关闭后驻留菜单栏。</p>
 
