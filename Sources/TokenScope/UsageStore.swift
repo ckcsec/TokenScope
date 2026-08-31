@@ -15,6 +15,8 @@ final class UsageStore: ObservableObject {
     private var scanGeneration = 0
     private var baseOverviews: [UsagePeriod: UsageOverview] = [:]
     private var queryOverviews: [OverviewCacheKey: UsageOverview] = [:]
+    private var autoRefreshTimer: AnyCancellable?
+    private var dayChangedObserver: AnyCancellable?
 
     @Published var pricingAutoUpdateEnabled: Bool
     @Published private(set) var pricingLastFetchedAt: Date?
@@ -37,6 +39,22 @@ final class UsageStore: ObservableObject {
     func setPricingAutoUpdateEnabled(_ enabled: Bool) {
         pricingAutoUpdateEnabled = enabled
         pricingFetcher.setAutoUpdateEnabled(enabled)
+    }
+
+    /// Keeps statistics current while the app stays open: a periodic rescan
+    /// plus a forced rescan the moment the calendar day changes, so "today"
+    /// never shows yesterday's numbers after midnight.
+    func startAutoRefresh() {
+        autoRefreshTimer = Timer.publish(every: refreshInterval, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.refresh()
+            }
+        dayChangedObserver = NotificationCenter.default.publisher(for: .NSCalendarDayChanged)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refresh(force: true)
+            }
     }
 
     func overview(period: UsagePeriod, query: String = "") -> UsageOverview {

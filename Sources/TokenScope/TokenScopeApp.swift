@@ -60,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
         store.refresh()
+        store.startAutoRefresh()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
