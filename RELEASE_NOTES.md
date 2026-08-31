@@ -1,3 +1,7 @@
+# TokenScope 1.1.2
+
+- 新增自动刷新：应用常驻时每 5 分钟重扫一次日志，并在日历日切换瞬间强制刷新，不再需要重启才能看到当天的新用量
+
 # TokenScope 1.1.1
 
 - 修复关闭窗口后点击 Dock 图标无法重新打开主窗口的问题（实现 applicationShouldHandleReopen）
