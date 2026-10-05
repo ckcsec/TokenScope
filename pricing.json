@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-28",
+  "version": "2026-10-05",
   "models": [
     {
       "modelID": "abliterated-model",
@@ -20,6 +20,13 @@
       "inputPerMillion": 5,
       "outputPerMillion": 5,
       "cacheReadPerMillion": 0.5,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "abliteration-abliterated-model-large-v2",
+      "inputPerMillion": 3,
+      "outputPerMillion": 5,
+      "cacheReadPerMillion": 0.3,
       "cacheWritePerMillion": 0
     },
     {
@@ -457,6 +464,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "anthropic-claude-sonnet-5.5",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.2,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "anthropic.claude-fable-5",
       "inputPerMillion": 10,
       "outputPerMillion": 50,
@@ -542,6 +556,13 @@
     },
     {
       "modelID": "anthropic.claude-sonnet-5",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.2,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "anthropic.claude-sonnet-5-5",
       "inputPerMillion": 2,
       "outputPerMillion": 10,
       "cacheReadPerMillion": 0.2,
@@ -1444,6 +1465,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "claude-opus-5-5-fast",
+      "inputPerMillion": 9.6,
+      "outputPerMillion": 48,
+      "cacheReadPerMillion": 0.48,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "claude-opus-5-default",
       "inputPerMillion": 5,
       "outputPerMillion": 25,
@@ -1654,6 +1682,27 @@
       "cacheWritePerMillion": 3.75
     },
     {
+      "modelID": "claude-sonnet-5-5",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.2,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "claude-sonnet-5-5-default",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.2,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "claude-sonnet-5-5-eu",
+      "inputPerMillion": 2.2,
+      "outputPerMillion": 11,
+      "cacheReadPerMillion": 0.22,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "claude-sonnet-5-default",
       "inputPerMillion": 2,
       "outputPerMillion": 10,
@@ -1665,6 +1714,13 @@
       "inputPerMillion": 1.98,
       "outputPerMillion": 9.9,
       "cacheReadPerMillion": 0.198,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "claude-sonnet-5.5",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.2,
       "cacheWritePerMillion": 0
     },
     {
@@ -2732,6 +2788,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "deepseek-v4.1-flash-fast",
+      "inputPerMillion": 0.6,
+      "outputPerMillion": 2.4,
+      "cacheReadPerMillion": 0,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "deepseek-v4.1-flash-fast-fp4",
       "inputPerMillion": 0.3,
       "outputPerMillion": 1.2,
@@ -2743,6 +2806,13 @@
       "inputPerMillion": 0.0975,
       "outputPerMillion": 0.39,
       "cacheReadPerMillion": 0.00975,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "deepseek-v4.1-flash-marathon",
+      "inputPerMillion": 0.14,
+      "outputPerMillion": 0.28,
+      "cacheReadPerMillion": 0.0028,
       "cacheWritePerMillion": 0
     },
     {
@@ -3391,6 +3461,13 @@
     },
     {
       "modelID": "eu.anthropic.claude-sonnet-5",
+      "inputPerMillion": 2.2,
+      "outputPerMillion": 11,
+      "cacheReadPerMillion": 0.22,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "eu.anthropic.claude-sonnet-5-5",
       "inputPerMillion": 2.2,
       "outputPerMillion": 11,
       "cacheReadPerMillion": 0.22,
@@ -4525,6 +4602,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "gliner-2.5-decide",
+      "inputPerMillion": 0.15,
+      "outputPerMillion": 0.15,
+      "cacheReadPerMillion": 0.15,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "gliner2-base-v1",
       "inputPerMillion": 0.15,
       "outputPerMillion": 0.15,
@@ -4557,6 +4641,13 @@
       "inputPerMillion": 0.15,
       "outputPerMillion": 0.15,
       "cacheReadPerMillion": 0.15,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "gliner2.5-base-v1",
+      "inputPerMillion": 0.03,
+      "outputPerMillion": 0,
+      "cacheReadPerMillion": 0.03,
       "cacheWritePerMillion": 0
     },
     {
@@ -5155,6 +5246,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "glm-5.3-marathon",
+      "inputPerMillion": 1.4,
+      "outputPerMillion": 4.4,
+      "cacheReadPerMillion": 0.26,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "glm-5.3-prime",
       "inputPerMillion": 2.8,
       "outputPerMillion": 8.8,
@@ -5173,6 +5271,13 @@
       "inputPerMillion": 1.25,
       "outputPerMillion": 2.25,
       "cacheReadPerMillion": 0.3,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "glm-5.x-menthol",
+      "inputPerMillion": 0.4,
+      "outputPerMillion": 1.75,
+      "cacheReadPerMillion": 0,
       "cacheWritePerMillion": 0
     },
     {
@@ -5393,6 +5498,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "global.anthropic.claude-sonnet-5-5",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.2,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "global.moonshotai.kimi-k3",
       "inputPerMillion": 3,
       "outputPerMillion": 15,
@@ -5442,7 +5554,21 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "global.openai.gpt-6.1-sol",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.1,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "global.xai.grok-4.6",
+      "inputPerMillion": 2,
+      "outputPerMillion": 6,
+      "cacheReadPerMillion": 0.5,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "global.xai.grok-4.7",
       "inputPerMillion": 2,
       "outputPerMillion": 6,
       "cacheReadPerMillion": 0.5,
@@ -6443,6 +6569,34 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "gpt-6.1-sol",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.1,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "gpt-6.1-sol-eu",
+      "inputPerMillion": 2.4,
+      "outputPerMillion": 12,
+      "cacheReadPerMillion": 0.12,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "gpt-6.1-sol-fast",
+      "inputPerMillion": 4,
+      "outputPerMillion": 20,
+      "cacheReadPerMillion": 0.2,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "gpt-6.1-sol-pro",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.1,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "gpt-astra-latest",
       "inputPerMillion": 10,
       "outputPerMillion": 50,
@@ -7289,6 +7443,27 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "in.anthropic.claude-haiku-4-5-20251001-v1",
+      "inputPerMillion": 1.1,
+      "outputPerMillion": 5.5,
+      "cacheReadPerMillion": 0.11,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "in.anthropic.claude-opus-5",
+      "inputPerMillion": 5.5,
+      "outputPerMillion": 27.5,
+      "cacheReadPerMillion": 0.55,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "in.anthropic.claude-sonnet-5",
+      "inputPerMillion": 2.2,
+      "outputPerMillion": 11,
+      "cacheReadPerMillion": 0.22,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "in.openai.gpt-5.6-luna",
       "inputPerMillion": 0.22,
       "outputPerMillion": 1.32,
@@ -8073,10 +8248,24 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "ling-3.0-flash-sante",
+      "inputPerMillion": 0.075,
+      "outputPerMillion": 0.22,
+      "cacheReadPerMillion": 0.015,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "ling-3.0-flash-vl",
       "inputPerMillion": 0.06,
       "outputPerMillion": 0.18,
       "cacheReadPerMillion": 0.012,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "ling-3.1-flash",
+      "inputPerMillion": 0.075,
+      "outputPerMillion": 0.22,
+      "cacheReadPerMillion": 0.015,
       "cacheWritePerMillion": 0
     },
     {
@@ -8885,6 +9074,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "mimo-v2.6-flash-rl",
+      "inputPerMillion": 0.1,
+      "outputPerMillion": 0.25,
+      "cacheReadPerMillion": 0,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "mimo-v2.6-flash-uncensored",
       "inputPerMillion": 0.5,
       "outputPerMillion": 1.5,
@@ -8896,6 +9092,13 @@
       "inputPerMillion": 0.43,
       "outputPerMillion": 0.87,
       "cacheReadPerMillion": 0.0036,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "mimo-v2.6-pro-rl",
+      "inputPerMillion": 0.4,
+      "outputPerMillion": 0.8,
+      "cacheReadPerMillion": 0,
       "cacheWritePerMillion": 0
     },
     {
@@ -10117,6 +10320,20 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "nex-n2.5-mini",
+      "inputPerMillion": 0.025,
+      "outputPerMillion": 0.1,
+      "cacheReadPerMillion": 0.0025,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "nex-n2.5-pro",
+      "inputPerMillion": 0.075,
+      "outputPerMillion": 0.25,
+      "cacheReadPerMillion": 0.015,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "nomic-embed-text",
       "inputPerMillion": 0.05,
       "outputPerMillion": 0,
@@ -10726,6 +10943,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "openai-gpt-6-1-sol",
+      "inputPerMillion": 2,
+      "outputPerMillion": 10,
+      "cacheReadPerMillion": 0.1,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "openai-gpt-6-astra",
       "inputPerMillion": 10,
       "outputPerMillion": 50,
@@ -10751,6 +10975,13 @@
       "inputPerMillion": 2.5,
       "outputPerMillion": 12.5,
       "cacheReadPerMillion": 0.25,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "openai-gpt-61-sol",
+      "inputPerMillion": 2.5,
+      "outputPerMillion": 12.5,
+      "cacheReadPerMillion": 0.125,
       "cacheWritePerMillion": 0
     },
     {
@@ -10866,6 +11097,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "openai.gpt-6.1-sol",
+      "inputPerMillion": 2.2,
+      "outputPerMillion": 11,
+      "cacheReadPerMillion": 0.11,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "openai.gpt-oss-120b",
       "inputPerMillion": 0.15,
       "outputPerMillion": 0.6,
@@ -10975,6 +11213,13 @@
       "inputPerMillion": 2.5,
       "outputPerMillion": 7.5,
       "cacheReadPerMillion": 0.25,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "pareto-26.10-preview",
+      "inputPerMillion": 0.8,
+      "outputPerMillion": 3.2,
+      "cacheReadPerMillion": 0.03,
       "cacheWritePerMillion": 0
     },
     {
@@ -13393,6 +13638,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "umans-glm-5.3",
+      "inputPerMillion": 1.4,
+      "outputPerMillion": 4.4,
+      "cacheReadPerMillion": 0.26,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "umans-glm-5.3-flash",
       "inputPerMillion": 0.15,
       "outputPerMillion": 0.5,
@@ -13582,6 +13834,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "us.anthropic.claude-sonnet-5-5",
+      "inputPerMillion": 2.2,
+      "outputPerMillion": 11,
+      "cacheReadPerMillion": 0.22,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "us.deepseek.r1-v1",
       "inputPerMillion": 1.35,
       "outputPerMillion": 5.4,
@@ -13680,6 +13939,13 @@
       "cacheWritePerMillion": 0
     },
     {
+      "modelID": "us.openai.gpt-6.1-sol",
+      "inputPerMillion": 2.2,
+      "outputPerMillion": 11,
+      "cacheReadPerMillion": 0.11,
+      "cacheWritePerMillion": 0
+    },
+    {
       "modelID": "us.writer.palmyra-x4-v1",
       "inputPerMillion": 2.5,
       "outputPerMillion": 10,
@@ -13695,6 +13961,13 @@
     },
     {
       "modelID": "us.xai.grok-4.6",
+      "inputPerMillion": 2.2,
+      "outputPerMillion": 6.6,
+      "cacheReadPerMillion": 0.55,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "us.xai.grok-4.7",
       "inputPerMillion": 2.2,
       "outputPerMillion": 6.6,
       "cacheReadPerMillion": 0.55,
@@ -13901,6 +14174,13 @@
       "inputPerMillion": 0.4,
       "outputPerMillion": 2,
       "cacheReadPerMillion": 0.08,
+      "cacheWritePerMillion": 0
+    },
+    {
+      "modelID": "xiaomi-mimo-v2-6-flash",
+      "inputPerMillion": 0.175,
+      "outputPerMillion": 0.35,
+      "cacheReadPerMillion": 0.00375,
       "cacheWritePerMillion": 0
     },
     {
